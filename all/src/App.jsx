@@ -1,42 +1,87 @@
-import { Link } from "react-router-dom";
-import { allContryByName } from "./services/countryApi";
 import { useEffect, useState } from "react";
+import fetchMovie from "./services/api";
+import seeMovie from "./services/movie";
 
 function App() {
-  const [countrys, setCountrys] = useState([]);
+  const [movies, setMovies] = useState([]);
+  const [click, setClick] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [trailer, setTrailer] = useState(null);
+
   useEffect(() => {
-    async function loadCountrys() {
-      const result = await allContryByName();
-      setCountrys(result);
+    async function loadMovies() {
+      const data = await fetchMovie();
+      setMovies(data.results);
     }
-    loadCountrys();
+    loadMovies();
   }, []);
+
+  async function trailerMovie(id) {
+    const data = await seeMovie(id);
+    setTrailer(data);
+    console.log("Trailer data:", data);
+  }
+
+  function handleClick(id) {
+    setClick(id);
+    setIsModalOpen(true);
+    trailerMovie(id);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+    setClick(null);
+    setTrailer(null);
+  }
+
   return (
-    <div className="w-screen h-screen overflow-auto">
-      <h1 className="text-5xl flex items-center justify-center">Countrys</h1>
-      {countrys.length > 0 ? (
-        <>
-          <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {countrys.map((country, index) => (
-              <div
-                key={index}
-                className="bg-neutral-300 p-4 rounded shadow text-center"
-              >
-                <img
-                  className="w-40 mx-auto"
-                  src={country.flags.png}
-                  alt={`Bandeira de ${country.name.common}`}
-                />
-                <Link to={`/info/${country.name.common}`}>
-                  {country.name.common}
-                </Link>
-              </div>
+    <div className="bg-neutral-900">
+      <div>
+        {movies.length > 0 ? (
+          <div className="grid grid-cols-6 p-4 justify-items-center gap-4">
+            {movies.map((movie, index) => (
+              <button key={index} onClick={() => handleClick(movie.id)}>
+                <div className="relative">
+                  <img
+                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                    alt={movie.title}
+                    className="w-52 rounded"
+                  />
+                </div>
+              </button>
             ))}
+            {isModalOpen && click && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                <div className="bg-black rounded-xl shadow-lg p-6 w-full max-w-4xl text-center text-white">
+                  {trailer ? (
+                    <div className="aspect-video w-full flex items-center justify-center">
+                      <iframe
+                        className="w-full h-full rounded-lg"
+                        src={`https://www.youtube.com/embed/${trailer}`}
+                        frameBorder="0"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <p>Carregando trailer...</p>
+                  )}
+
+                  <button
+                    onClick={closeModal}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </>
-      ) : (
-        <p>Loading...</p>
-      )}
+        ) : (
+          <div>
+            <p>Carregando</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
